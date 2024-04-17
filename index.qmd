@@ -1,0 +1,572 @@
+---
+title: Fine-Tuning Transformer Models for Classification of Digital Behavioural Data
+author:
+  - name:
+      given: Indira
+      family: Sen
+    affiliations:
+      - name: RWTH Aachen University
+jupyter: python3
+bibliography: references.bib
+csl: apa.csl
+# image: img/cover.jpg
+# image-alt: Computer screen showing calculator app.
+format:
+  html: default
+  ipynb: default
+---
+
+## Learning Objectives
+
+By the end of this tutorial, you will be able to fine-tune transformer models like BERT for binary and multiclass document classification. We show two options for using transformer models in Python
+
+- Simple Transformers
+- HuggingFace
+
+As an example, we will fine-tune a specific transformer model (DistilBERT) for automatic sexism detection. 
+
+## Target audience
+
+This tutorial is aimed at social scientists with some knowledge in Python and supervised machine learning.
+
+## Setting up the computational environment
+
+The following Python packages are required
+
+```python
+!pip install pandas numpy torch sklearn
+!pip install simpletransformers
+!pip install transformers[torch]
+```
+
+This package is optional
+
+```python
+!pip install accelerate -U
+```
+
+## Duration
+
+It depends on the hardware. This notebook can be used with or without GPU compute, but it's much faster if you do have a GPU.
+
+## Social Science Usecase(s)
+
+This method has been used in @samory2021call for automatic sexism detection.
+
+## Import necessary Python libraries and modules
+
+We will import necessary Python libraries and modules.
+
+```{python}
+#| eval: false
+# For data manipulation and analysis
+import pandas as pd
+import numpy as np
+
+# For deep learning
+import torch
+```
+
+We then check if have a GPU available. This is important because some parts of the code have to be modified later on based on this.
+
+```{python}
+#| eval: false
+gpu_avail = torch.cuda.is_available()
+gpu_avail
+```
+
+## Get the data
+
+We first download the datasets we need for finetuning our models. This is a **supervised** classification task, therefore, we will need labeled data. We download the the 'Call me sexist but' dataset which you can find here: https://search.gesis.org/research_data/SDN-10.7802-2251 This dataset is from our paper on detecting sexism in a theory-driven manner:
+
+Samory, M., Sen, I., Kohne, J., Flöck, F., & Wagner, C. (2021). [**“Call me sexist, but.” : Revisiting Sexism Detection Using Psychological Scales and Adversarial Samples.**](https://ojs.aaai.org/index.php/ICWSM/article/view/18085) Proceedings of the International AAAI Conference on Web and Social Media, 15(1), 573-584
+
+Here, we download the data and put it in folder called 'sexism_data' in the same location as our jupyter notebook.
+
+```{python}
+#| eval: false
+sexism_data = pd.read_csv('sexism_data/all_data.csv', sep = '\t')#.head(1000)
+sexism_data.head()
+```
+
+```{python}
+#| eval: false
+sexism_data = sexism_data.dropna(subset = 'sexist')
+```
+
+We first use the [`simpletransformers`](https://simpletransformers.ai/) package which is more beginner-friendly. Uncomment the following line and run it to install the package.
+
+```{python}
+#| eval: false
+! pip install simpletransformers
+```
+
+The basic steps for finetuning a classifier using simpletrasnformers are:
+- Initialize a model based on a specific architechture (BERT, DistilBERT, etc)
+- Train the model with train_model()
+- Evaluate the model with eval_model()
+- Make predictions on (unlabelled) data with predict()
+
+```{python}
+#| eval: false
+
+from simpletransformers.classification import ClassificationModel, ClassificationArgs
+import logging
+```
+
+```{python}
+#| eval: false
+logging.basicConfig(level=logging.INFO)
+transformers_logger = logging.getLogger("transformers")
+transformers_logger.setLevel(logging.WARNING)
+```
+
+We need to preprocess the data first before we start the finetuning process. In this step, we split the dataset into **train** and **test** sets to have a fully held-out test set that can be used to evaluate our classifier.
+
+We can also create a **validation** that is used during the fine tuning process for hyperparameter tuning, but that is not mandatory.
+
+```{python}
+#| eval: false
+from sklearn.model_selection import train_test_split
+
+train_df, test_df = train_test_split(sexism_data, stratify=sexism_data['sexist'], test_size=0.2)
+```
+
+We now convert the dataframes into a format that can be read by simpletransformers. This is a dataframe with the columns 'text' and 'labels'. The 'labels' column should be numerical, so we use **one-hot encoding** to transform our boolean sexist labels to numerical ones.
+
+```{python}
+#| eval: false
+from sklearn.preprocessing import LabelEncoder
+le = LabelEncoder()
+le.fit(train_df['sexist'])
+train_df['labels'] = le.transform(train_df['sexist'])
+test_df['labels'] = le.transform(test_df['sexist'])
+```
+
+```{python}
+#| colab: {base_uri: 'https://localhost:8080/'}
+#| eval: false
+
+# to see which number was mapped to which class:
+list(le.inverse_transform([0,1]))
+```
+
+So, 0 is non-sexist and 1 is sexist. We now have the appropriate data structure.
+
+The next step is setting the training parameters and loading the classification model, in this case, DistilBERT, a lightweight model that can be trained relatively quickly compared to other transformer variants like BERT and RoBERTa.
+
+For training parameters, we have many to choose from such as the learning rate, whether we want to stop early or not, where we should save the model, and more. You can find all of them here: https://simpletransformers.ai/docs/usage/#configuring-a-simple-transformers-model
+
+As a minimal setup, we will just set the number of **epochs**, i.e., the number of passes the model does over the full training set. For recent transformer models, epochs are usually set to 2 or 3, after which overfitting may happen.
+
+**use_cuda** is a parameter that signals whether the GPU should be used or not. It will be set based on our check earlier.
+
+```{python}
+#| colab: {base_uri: 'https://localhost:8080/'}
+#| eval: false
+
+# Optional model configuration
+model_args = ClassificationArgs(num_train_epochs=3, overwrite_output_dir=True)
+
+# Create a ClassificationModel
+model = ClassificationModel(
+    "distilbert", "distilbert-base-uncased", args=model_args, use_cuda=gpu_avail,
+)
+
+# we set some additional parameters when using a GPU
+if gpu_avail:
+    model_args.use_multiprocessing=False
+    model_args.use_multiprocessing_for_evaluation=False
+```
+
+We are now finally ready to begin training! This might take a while, especially when we're not using a GPU.
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/', height: 162, referenced_widgets: [1655f378acd042cba9d0b766df5ca5ef, a66039b426e043019bf4ad8a73fe6499, af912ad98b8142619fb7617980cd3bf9, ef2815c541be46aea6ab6a756d60fa71, 5a630f3c420141829914ec69003d8463, 503916233b1541bcb60af1dbc456a9cb, 1ef43392090d4d37bfb2d516f43af23d, cb0b763ce6b94c0eb503f1ee65cb8f80, 7d5cef87be8746af8d9fb2e04d9ac089, b6164da3f4404307b8ff238b4a623a51, d615500da6d144e281f32dc8b2287afe, be66249254e74d7cb82c1d07d1df4fbe, adbe46c27b70479bbaa80ae2cb460d0b, 80184446b2aa47f5a53533c91041ab0c, 842aace606d64781a51531e529b6b424, 3de6c256de154929b6b6547a13e4d183, 418de2e8df54492cb0830d787ca2d55d, 6587a9c277e84e07ac6491dbf4fb2406, 0db10875138841af920ca39216c78af1, 5af087e1c68d4c0691b8ceb706691c41, df25a95e29e5442e91393df8f5ae9f40, 8c9d60f5924242deb1f8b7b2c9bccfd4, 8077925d692d46c79104b60a7aa87ee4, b33cfe00d652495cb2d434f542304711, d98dbfe170064da4acdb8581bb0f2cc9, e38b4f60757b45399c003f8e5590d267, a9687bd0bf9b496f908506e27701ffc5, 5c81ad9416dc4171ae3838d787f28fa4, 258b00e1fec149058f94b99b8197bfdf, d2eb4e6bcfec488fb6547432fcbdb4a0, 82c2db3ca7694226a94a0022590fb6fb, 84768e6c19364532ab9498e41fc18a44, 61bb9c157f75468ebc9574410683a1c6, 156e8b2688de40a0b208268c7e709b59, 57e653099bbe4b4c8f61381c2d592f44, 2f1f1467c0cd4801aba41f5d195994d6, 6dd27e81a302405e834bec160d0c6150, fe0ea4324ba74cde8e1fa13964eb1df1, 19d6017557e248b19f49ee8aac8d55af, e4ae38a4f27e4109a8b515275946253e, dcb62b23403741178282d807fa0adf73, 44036f080d2a475abe133741c24bddfd, b9594cab517a4303b6359b133ba277ae, 945e073744424256b5da5e9f69397e7b]}
+# Train the model
+model.train_model(train_df)
+```
+
+After training our model, we can use it to make predictions for unlabeled datapoints to classify whether they are sexist or not.
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/', height: 66, referenced_widgets: [a9b8679e0bc047b0b39ab47bdf7751c2, e3b63bb268ab4767b04586a8923a1c9f, d08a354fc38745aebcba7ac8f4770d3a, 0ccf8e3dacf1403fb58dcae415f80cc4, bc3feac11d044c2d8df106894fc31761, 6c46aa4323ec46c689f61055eaff9f23, 8bc400a08ea148c8b6930b9ca344532b, 739c3ce4729849a49ae7878f8ee50374, 28768d45f188450b81ab38831b3fcced, c809cd8cf9d94546bc11f6d711a188f3, cb93d7181e5f449ba8b47438019da1e4]}
+sexist_tweet = "Women belong in the kitchen"
+predictions, raw_outputs = model.predict([sexist_tweet])
+le.inverse_transform(predictions)
+```
+
+We can also use the held-out test set to quantitatively evaluate our model.
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/', height: 223, referenced_widgets: [eff6569a3a284dd4ab2e7f54f947473c, f967cec1330d445f8d44b22081580482, 2c6a39dd0a30421aa2a82eadbaee1d79, cf9d95044d5744ca976fb963f27734cc, 10190c19af5644348192b1bcc9aa0b60, fcacf60b6bcf4918a0b5f61fc023cb5b, 999d6ea35fb8440fa0ba4b036328ac92, 182bee87245447858fd24f5e71aac65d, c8c820ae617842c582fd475bfe12df38, 4731c54b59d34b089c98f7ce51cf694b, 7b60c3ed686a480c9e141b2379718625]}
+# Evaluate the model
+result, model_outputs, wrong_predictions = model.eval_model(test_df)
+result
+```
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/', height: 205, referenced_widgets: [92db3fadb199478abe4c63c090a567a4, 5c454158c50e4962b52df9b8e6ecfe21, ab7d1c29ac434087a6733b5d6407da2e, 07e5d1c0381f42c08ed3adefca71534e, 36854fae1bee4b479a42357ce64b1212, 8bca3770f1db4eaa92d967ad50b37769, 937d8c239ee7449da746565797fc573e, 40a78332d7d94e999f821fa5f1cd8c9f, f9c0ebb6f86c457c9fe3025ae6448661, 9f520f96ace640ea9a91b876a2bb8e26, 4666acc001e34fbb8641cbedb0caf8a9]}
+# you can also use sklearn's neat classification report to get more metrics
+from sklearn.metrics import classification_report
+
+preds, _ = model.predict(list(test_df['text'].values))
+# preds = le.inverse_transform(preds)
+
+print(classification_report(test_df['labels'], preds))
+```
+
+We now repeat the same process with the HuggingFace [`transformers` Python library](https://huggingface.co/transformers/installation.html).
+
+Additionally, we also use the accelerate library [https://huggingface.co/docs/accelerate/index], which helps make our code more efficient. As before, uncomment the next two lines if you don't have these installed.
+
+```{python}
+#| eval: false
+# ! pip install transformers[torch]
+```
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/'}
+!pip install accelerate -U
+```
+
+We will again use DistilBERT.
+
+```{python}
+#| eval: false
+from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
+from transformers import Trainer, TrainingArguments
+```
+
+We will set some of the configurations, including whether to use a GPU or not.
+
+```{python}
+#| eval: false
+model_name = 'distilbert-base-uncased'
+if gpu_avail:
+    device_name = 'cuda'
+else:
+    device_name = 'cpu'
+
+# This is the maximum number of tokens in any document; the rest will be truncated.
+max_length = 512
+
+# This is the name of the directory where we'll save our model. You can name it whatever you want.
+cached_model_directory_name = 'output_hf'
+```
+
+We will reuse the train-test splits we created for simpletransformers, but change the data structure slightly.
+
+```{python}
+#| eval: false
+train_texts = train_df['text'].values
+train_labels = train_df['labels'].values
+
+test_texts = test_df['text'].values
+test_labels = test_df['labels'].values
+```
+
+Compared to simpletransformers, we get a closer look at what happens 'under the hood' with huggingface. We will see the transformation of the text better --- each tweet will be truncated if they're more than 512 tokens or padded if they're fewer than 512 tokens.
+
+The tokens will be separated into "word pieces" using the transformers tokenizers ('DistilBertTokenizerFast' in this case to match the DistiBERT model). And some special tokens will also be added such as **CLS** (start token of every tweet) and **SEP** (separator between each sentence {not tweet}):
+
+```{python}
+#| eval: false
+tokenizer = DistilBertTokenizerFast.from_pretrained(model_name)
+```
+
+We now encode our texts using the tokenizer.
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/', height: 81, referenced_widgets: [70215d51c1854a8d9ba7eb504db3951c, a59f5f2e99f9483fb5b4f7049d775fc6, afbe091bf4c546cd9480d9f20e140da0, 4f5a083d3d3e4076ab69237bd656014f, 22078b1180f3479b9a869fd946f2a365, 2c8b68429e1d404d89f8fecae63e2c86, 97787660e24f4f1b92d90a2e8a4a31b0, 34af2aedbb5742e69e8393fb62a51d1b, dcaf4117afa34d6da75724ca91e35956, 8e34f75dd857433f9a40ae6afd58063f, b5b066ccfe224c3ca1f95e193411b4a2, b3c1de62eb1e4d2ba6acfa524be0bbcb, 6e39ab4ecff8464599a0b1e7ef4df535, 99a242a133c44783bc72789057e44f13, 7a1045b3b899481fba01b8f7869649d5, 0c592193c39548f7814847583da924ac, c4f7ccd633f546c8b6a7d2bd90a71b9c, 53b646626d054f0cab06fd68e31ffa0e, 7bac0bceccad471f958d9dbac25a8d3b, e19066680be74354a0f501307edf8794, b2772b4d507a447eb13b6b147b9b6a06, 6d2631bd285c44b89cd32faf785e736f]}
+from datasets import Dataset
+
+train_df = Dataset.from_pandas(train_df)
+test_df = Dataset.from_pandas(test_df)
+
+def tokenize_function(examples):
+    return tokenizer(examples["text"], padding="max_length", truncation=True)
+
+
+tokenized_train_df = train_df.map(tokenize_function, batched=True)
+tokenized_test_df = test_df.map(tokenize_function, batched=True)
+```
+
+We now load the DistilBERT model and specify that it should use the GPU.
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/'}
+model = DistilBertForSequenceClassification.from_pretrained(model_name, num_labels=len(le.classes_)).to()
+```
+
+As we did with simpletransformers, we now set the training parameters, i.e., the number of epochs.
+
+```{python}
+#| eval: false
+import accelerate
+```
+
+```{python}
+#| eval: false
+training_args = TrainingArguments(
+    num_train_epochs=3,              # total number of training epochs
+    output_dir='./results',          # output directory
+    report_to='none'
+)
+```
+
+## Fine-tune the DistilBERT model
+
+First, we define a custom evaluation function that returns the accuracy. You could modify this function to return precision, recall, F1, and/or other metrics.
+
+```{python}
+#| eval: false
+from sklearn.metrics import accuracy_score
+def compute_metrics(pred):
+    labels = pred.label_ids
+    preds = pred.predictions.argmax(-1)
+    acc = accuracy_score(labels, preds)
+    return {
+        'accuracy': acc,
+  }
+```
+
+Then we create a HuggingFace `Trainer` object using the `TrainingArguments` object that we created above. We also send our `compute_metrics` function to the `Trainer` object, along with our test and train datasets.
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/'}
+trainer = Trainer(
+    model=model,                         # the instantiated 🤗 Transformers model to be trained
+    args=training_args,                  # training arguments, defined above
+    train_dataset=tokenized_train_df,         # training dataset
+    compute_metrics=compute_metrics      # our custom evaluation function
+)
+```
+
+Time to finally fine-tune!
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/', height: 276}
+trainer.train()
+```
+
+## Save fine-tuned model
+
+The following cell will save the model and its configuration files to a directory in Colab. To preserve this model for future use, you should download the model to your computer.
+
+```{python}
+#| eval: false
+trainer.save_model(cached_model_directory_name)
+```
+
+(Optional) If you've already fine-tuned and saved the model, you can reload it using the following line. You don't have to run fine-tuning every time you want to evaluate.
+
+```{python}
+#| eval: false
+# trainer = DistilBertForSequenceClassification.from_pretrained(cached_model_directory_name)
+```
+
+We can now evaluate the model by predicting the labels for the test set.
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/', height: 17}
+predicted_results = trainer.predict(tokenized_test_df)
+```
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/'}
+predicted_labels = predicted_results.predictions.argmax(-1) # Get the highest probability prediction
+predicted_labels = predicted_labels.flatten().tolist()      # Flatten the predictions into a 1D list
+predicted_labels[0:5]
+```
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/'}
+print(classification_report(tokenized_test_df['labels'],
+                            predicted_labels))
+```
+
+You can now use this classifier on other types of data to label it for potentially sexist content.
+
+### Multi-class classification
+
+In the previous parts, we finetuned a binary classifier for differentiating sexist vs. non-sexist content. However, the CMSB dataset has fine-grained labels for sexism based on **content** and **phrasing**.
+
+So we now use a multi-class classifier using simpletransformers, with a few tweaks to our earlier code.  
+
+But first, we have to aggregate the annotations from all crowdworkers to obtain the content and phrasing labels. For simplicity, we will use the majority label (breaking ties randomly).
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/', height: 206}
+sexism_data_annotations = pd.read_csv('sexism_data/all_data_annotations.csv', sep = '\t')
+sexism_data_annotations.head()
+```
+
+```{python}
+#| eval: false
+tweets = sexism_data_annotations['_id'].unique()
+```
+
+```{python}
+#| eval: false
+from collections import Counter
+
+content_labels = []
+phrasing_labels = []
+
+for tweet in tweets:
+    data_subset = sexism_data_annotations[sexism_data_annotations['_id'] == tweet]
+    content_labels.append(Counter(data_subset['content'].values).most_common()[0][0]) # get the majority label for content
+    phrasing_labels.append(Counter(data_subset['phrasing']).most_common()[0][0]) # get the majority label for phrasing
+```
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/', height: 424}
+finegrained_sexism_data = pd.DataFrame([tweets, content_labels, phrasing_labels]).T
+finegrained_sexism_data.columns = ['_id', 'content_label', 'phrasing_label']
+finegrained_sexism_data
+```
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/'}
+finegrained_sexism_data.groupby('content_label').size()
+```
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/'}
+finegrained_sexism_data.groupby('phrasing_label').size()
+```
+
+The six content and three phrasing categories are:
+
+![](img/img1.png)
+
+Let's join this data with the tweets data from 'all_data.csv'
+
+```{python}
+#| eval: false
+
+finegrained_sexism_data = pd.merge(finegrained_sexism_data, sexism_data[['_id', 'text', 'sexist']])
+```
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/'}
+finegrained_sexism_data.groupby(['content_label']).size()
+```
+
+Since our dataset is somewhat imbalanced with low representation for some categories, we can restrict it to only those classes that have at least 300 instances, i.e., 1, 2, and 6.
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/'}
+finegrained_sexism_data = finegrained_sexism_data[finegrained_sexism_data['content_label'].isin([1, 2, 6])]
+
+# we also change the label range for simpletransformers, making them range from 0 to 2.
+label_map = {1 : 0,
+             2 : 1,
+             6 : 2}
+finegrained_sexism_data['content_label'] = [label_map[i] for i in finegrained_sexism_data['content_label']]
+finegrained_sexism_data.groupby(['content_label']).size()
+```
+
+Let's train a classifier for identifying sexist content or phrasing
+
+```{python}
+#| eval: false
+category = 'content_label'
+```
+
+```{python}
+#| eval: false
+multi_train_df, multi_test_df = train_test_split(finegrained_sexism_data,
+                                                 stratify=finegrained_sexism_data[category],
+                                                 test_size=0.2)
+```
+
+You have the add the number of labels to the model initialization.
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/'}
+# Optional model configuration
+model_args = ClassificationArgs(num_train_epochs=5,
+                                output_dir='output_st',
+                                overwrite_output_dir=True)
+
+# Create a ClassificationModel
+model = ClassificationModel(
+    "distilbert", "distilbert-base-uncased", num_labels=len(finegrained_sexism_data[category].unique()),
+    use_cuda=gpu_avail,
+    args=model_args
+)
+
+
+# we set some additional parameters when using a GPU
+if gpu_avail:
+    model_args.use_multiprocessing=False
+    model_args.use_multiprocessing_for_evaluation=False
+```
+
+```{python}
+#| eval: false
+# multi_train_df['content_label'] = [i-1 for i in multi_train_df['content_label']]
+# multi_test_df['content_label'] = [i-1 for i in multi_test_df['content_label']]
+```
+
+```{python}
+#| eval: false
+multi_train_df = multi_train_df[['text', category]]
+multi_test_df = multi_test_df[['text', category]]
+```
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/', height: 281, referenced_widgets: [ba8c9650e57440478103e04ffb9fbf19, 01c300a1acd343d09bb5f32f9d487808, 9c195231ced94e50a1f468a11771c18e, 8e9c85c8714c4b75a0687454e1e57421, 43697df9692945cf8f328a187de22f37, 8cf454389a62472782b8bd1e0aeb9c58, e0386dedb90d4c8fb893bb0ec31bc7e0, ce3d4e7d6d114752a24d956430454c96, 395434c6e562454fad8764a759dad144, 7e423ed830024db7a55d51afa98a4d55, 34bb39ec5a494ac591c37b5e1708cbb9, 1258c70648a342538abc559e6d23c9ec, 98864f1d0bc3489ea9347b431b0dcee7, 3b229e5209424aa78625595223643848, a3aee0de2e094455b74f2dcacaa6594d, c637a1087416472d84061131f4173768, 81336ef64b21445eb6467fae6727450e, a7e2655cd4984d5b84e2b105074efbf9, 314faa1f22cf4732b50d9a66cf98db93, d63bbf0efcbb492f8c19238fbba0fdc9, f6306123f4ce42eeb05c996164ac44a4, e42fdb33e65f494fa62793120b03d588, 271f0e408a29489ea0818467a32589f6, 0190fb5903124cc2ad66b7d77ab80b0f, e7e2a37cc98240e8a59ff0ad53f62b2d, dca8bb91213545c0be0dcab78a76177c, 75d0bce2aa054e0fa61df20331dec4ca, 8c2b7d90c0d348c0ad0957b481ea3add, 8d6a3f83e17e4dc09ac5a6c008645caf, 965136ad5a304cae840c5362f1abb5d8, 7b7c2bc1f68d4838b82d616e6e58b516, 721eaebe2bff46dcb78c4f5e8df0130f, 0b77f77497a043e287b979996eccd266, 0fcecc4005384ab286177dd4ad72221b, 4c1856cb837047b8962759b6eaab04b8, e97ea65d02ca47acb1378f8f26c2e38b, 2896a3a04c8445ea80b26fbf10b835dd, e8e186c6d19f458d98336a533b19bd5e, 7f912afe1cf244efa6331f3e6e379707, 21b46ac2681942a99a5b65b4e699592c, 14b9c1c4a36848688f4d4c38b7aff1bd, 9be7bdf47aa1411d9542b5b05476817a, a879fcb572b548efa08c91cc03a3f59e, 858a0124addb44ab8fbe6582e574f971, f50df52ae4da4c6fb02f50310390fbd7, 7fb683f4b13c49e5b6047bde0221e583, 1fea945f52c04889802c9c9f6d21cb2c, 9beda07e28464bedb5217391d8fba576, 3d3816558975450f857c2bb67d7b602e, 82a6b243eb5b4c8aa57b7cc5ca04776f, 7317f9d33adb43dd99a544a0a676ae34, 2bb62d5a32ce41bb864885e29735252d, 1c512036640c4229aee68279922d4721, e5566345eb5e44818f0e82f193a9a238, 8833160d0d964aa6a29743cb21538528, 7c662d4b8c89478ea58635609aa544e8, af409f3730564d9caf481f5da16e2811, d98d33d3480f4b01a2d72553d617e10a, acc448ffe4bd4ba9bdf398925e09a061, 27db3984c0f14c6194e2a2b0b25c4542, 4a45c24cd647468099bcaf1912e65e23, 6fc3cd9c9ed84539804658965630d728, 50089357846241f0a24ce6aaf1126ec9, 2beb4e1d08b14477b146d4cd4b9c3d25, 476d14737d354afea1e45c0f403f2164, f0cb45f82bf84ba485879e8e05e7c3af]}
+# Train the model.
+model.train_model(multi_train_df)
+```
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/', height: 66, referenced_widgets: [ab8192d3693b463ca10c609432dba106, a1c4c699d8164b1d9f2011d25d8ce9b9, 431b34cfe6644ef4bfd5a633970ad036, 5572c23211684684baa204e44757d859, 21e7ed399e1a40819055f26016bd226c, b9d1ef12138c4bbda498584c5dcedae3, 510439ae3d364658a4c41235aacb5f8f, 41718f66d2fa435d83f10118a1fde197, a37fbaae68cc45fc9b32e30e54f69188, e996a79f7f2f4fefa4dacb2efc44eaf3, eddeb248ea5b4254a17338d678974827]}
+predictions, raw_outputs = model.predict([sexist_tweet])
+predictions
+```
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/', height: 49, referenced_widgets: [01bf59e6c5e843e49579a92d2d7b3980, 404504bb2dfb40a886c65f27aac9f8d7, b0c8bdc076bf42048ac5277d1e45c51a, f4024cf109a941a7b7e26c8076470ca0, 0b341be516514c96933318ad7e24b469, 66226bab5d454bf2bdfca0d2d3d8fbed, e052c0568ce14766be73727e3a737a2f, 498ba4a7d53d44269fd9ca12e5ca9972, e6096608f77f4d8ba195d45a000f066e, 9dd2fa948f5e4006a5ddd5c8c028b6c8, e9fff3c1c1424da1aa0fe59c4bed7375]}
+preds, _ = model.predict(list(multi_test_df['text'].values))
+```
+
+```{python}
+#| eval: false
+#| colab: {base_uri: 'https://localhost:8080/'}
+print(classification_report(multi_test_df[category], preds))
+```
+
+We can see that the model performs worse than binary sexism classification, but still better than a random chance model which would have add an accuracy of 0.3 as we have three classes.
+
+## Conclusion
+
+That's a wrap on fine-tuning your own transformer models for text classification. You can replace the sexism dataset with any other labeled dataset of your choice for a particular task to train a classifier for that task. More further reading and examples, see:
+
+- https://www.aiforhumanists.com/tutorials/
+- https://huggingface.co/docs/transformers/en/training
