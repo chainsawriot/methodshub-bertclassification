@@ -1,4 +1,4 @@
-name: grafzahl_condaenv_cuda
+name: sexism
 channels:
   - pytorch
   - nvidia
@@ -246,4 +246,3 @@ dependencies:
       - werkzeug==3.0.1
       - xxhash==3.4.1
       - yarl==1.9.4
-prefix: /home/chainsawriot/miniconda/envs/grafzahl_condaenv_cuda
