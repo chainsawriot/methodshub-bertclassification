@@ -58,8 +58,6 @@ This method has been used in @samory2021call for automatic sexism detection.
 We will import necessary Python libraries and modules.
 
 ```{python}
-#| eval: false
-# For data manipulation and analysis
 import pandas as pd
 import numpy as np
 
@@ -70,7 +68,6 @@ import torch
 We then check if have a GPU available. This is important because some parts of the code have to be modified later on based on this.
 
 ```{python}
-#| eval: false
 gpu_avail = torch.cuda.is_available()
 gpu_avail
 ```
@@ -79,16 +76,17 @@ gpu_avail
 
 We first download the datasets we need for finetuning our models. This is a **supervised** classification task, therefore, we will need labeled data. We download the the 'Call me sexist but' (CMSB) dataset which you can find here: [https://search.gesis.org/research_data/SDN-10.7802-2251](https://search.gesis.org/research_data/SDN-10.7802-2251) This dataset is from our paper on detecting sexism in a theory-driven manner [@samory2021call].
 
-Here, we download the data and put it in folder called 'sexism_data' in the same location as our jupyter notebook.
+Here, we can download the full data ('sexism\_data.csv') and put it in folder called 'sexism_data' in the same location as our jupyter notebook. Here, we will use just a subset of the data for demonstration.
 
 ```{python}
-#| eval: false
-sexism_data = pd.read_csv('sexism_data/all_data.csv', sep = '\t')#.head(1000)
+## sexism_data = pd.read_csv('sexism_data/sexism_data.csv')
+
+sexism_data = pd.read_csv('sexism_data/sexism_sample.csv')
+
 sexism_data.head()
 ```
 
 ```{python}
-#| eval: false
 sexism_data = sexism_data.dropna(subset = 'sexist')
 ```
 
@@ -104,8 +102,6 @@ We first use the [`simpletransformers`](https://simpletransformers.ai/) package 
 - Make predictions on (unlabelled) data with predict()
 
 ```{python}
-#| eval: false
-
 from simpletransformers.classification import ClassificationModel, ClassificationArgs
 import logging
 ```
@@ -122,7 +118,6 @@ We need to preprocess the data first before we start the finetuning process. In 
 We can also create a **validation** that is used during the fine tuning process for hyperparameter tuning, but that is not mandatory.
 
 ```{python}
-#| eval: false
 from sklearn.model_selection import train_test_split
 
 train_df, test_df = train_test_split(sexism_data, stratify=sexism_data['sexist'], test_size=0.2)
@@ -131,7 +126,6 @@ train_df, test_df = train_test_split(sexism_data, stratify=sexism_data['sexist']
 We now convert the dataframes into a format that can be read by simpletransformers. This is a dataframe with the columns 'text' and 'labels'. The 'labels' column should be numerical, so we use **one-hot encoding** to transform our boolean sexist labels to numerical ones.
 
 ```{python}
-#| eval: false
 from sklearn.preprocessing import LabelEncoder
 le = LabelEncoder()
 le.fit(train_df['sexist'])
@@ -140,8 +134,6 @@ test_df['labels'] = le.transform(test_df['sexist'])
 ```
 
 ```{python}
-#| eval: false
-
 # to see which number was mapped to which class:
 list(le.inverse_transform([0,1]))
 ```
@@ -157,8 +149,6 @@ As a minimal setup, we will just set the number of **epochs**, i.e., the number 
 **use_cuda** is a parameter that signals whether the GPU should be used or not. It will be set based on our check earlier.
 
 ```{python}
-#| eval: false
-
 # Optional model configuration
 model_args = ClassificationArgs(num_train_epochs=3, overwrite_output_dir=True)
 
@@ -176,8 +166,6 @@ if gpu_avail:
 We are now finally ready to begin training! This might take a while, especially when we're not using a GPU.
 
 ```{python}
-#| eval: false
-
 # Train the model
 model.train_model(train_df)
 ```
@@ -185,8 +173,7 @@ model.train_model(train_df)
 After training our model, we can use it to make predictions for unlabeled datapoints to classify whether they are sexist or not.
 
 ```{python}
-#| eval: false
-sexist_tweet = "Women belong in the kitchen"
+sexist_tweet = "A woman will never be truly fulfilled in life if she doesn’t have a committed long-term relationship with a man"
 predictions, raw_outputs = model.predict([sexist_tweet])
 le.inverse_transform(predictions)
 ```
@@ -217,7 +204,6 @@ We now repeat the same process with the HuggingFace [`transformers` Python libra
 We will again use DistilBERT.
 
 ```{python}
-#| eval: false
 from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
 from transformers import Trainer, TrainingArguments
 ```
