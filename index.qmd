@@ -178,17 +178,21 @@ predictions, raw_outputs = model.predict([sexist_tweet])
 le.inverse_transform(predictions)
 ```
 
+```{python}
+nonsexist_tweet = "International Women's Day (IWD) is a holiday celebrated annually on March 8 as a focal point in the women's rights movement."
+predictions, raw_outputs = model.predict([nonsexist_tweet])
+le.inverse_transform(predictions)
+```
+
 We can also use the held-out test set to quantitatively evaluate our model.
 
 ```{python}
-#| eval: false
 # Evaluate the model
 result, model_outputs, wrong_predictions = model.eval_model(test_df)
 result
 ```
 
 ```{python}
-#| eval: false
 # you can also use sklearn's neat classification report to get more metrics
 from sklearn.metrics import classification_report
 
@@ -197,6 +201,13 @@ preds, _ = model.predict(list(test_df['text'].values))
 
 print(classification_report(test_df['labels'], preds))
 ```
+
+## Conclusion
+
+That's a wrap on fine-tuning your own transformer models for text classification. You can replace the sexism dataset with any other labeled dataset of your choice for a particular task to train a classifier for that task. More further reading and examples, see:
+
+- [https://www.aiforhumanists.com/tutorials/](https://www.aiforhumanists.com/tutorials/)
+- [https://huggingface.co/docs/transformers/en/training](https://huggingface.co/docs/transformers/en/training)
 
 ### With HuggingFace `transformers`
 
@@ -510,10 +521,3 @@ print(classification_report(multi_test_df[category], preds))
 ```
 
 We can see that the model performs worse than binary sexism classification, but still better than a random chance model which would have add an accuracy of 0.3 as we have three classes.
-
-## Conclusion
-
-That's a wrap on fine-tuning your own transformer models for text classification. You can replace the sexism dataset with any other labeled dataset of your choice for a particular task to train a classifier for that task. More further reading and examples, see:
-
-- [https://www.aiforhumanists.com/tutorials/](https://www.aiforhumanists.com/tutorials/)
-- [https://huggingface.co/docs/transformers/en/training](https://huggingface.co/docs/transformers/en/training)
