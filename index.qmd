@@ -14,6 +14,8 @@ csl: apa.csl
 format:
   html: default
   ipynb: default
+execute:
+  freeze: true
 ---
 
 ## Learning Objectives
