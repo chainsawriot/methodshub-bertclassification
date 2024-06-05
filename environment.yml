@@ -14,3 +14,5 @@ dependencies:
       - transformers==4.38.2
       - numpy
       - scikit-learn
+      - jupyter-cache
+

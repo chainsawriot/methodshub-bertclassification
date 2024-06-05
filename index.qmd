@@ -16,6 +16,7 @@ format:
   ipynb: default
 execute:
   freeze: true
+  cache: true
 ---
 
 ## Learning Objectives
