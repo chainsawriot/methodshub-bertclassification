@@ -16,7 +16,8 @@ execute:
 format:
   html:
     embed-resources: true
-  ipynb: default    
+  ipynb: default
+  gfm: default  
 code-annotations: hover
 ---
 
