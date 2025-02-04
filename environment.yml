@@ -8,9 +8,11 @@ dependencies:
   - pytorch
   - jupyter
   - chardet
-  - pip
+  - pip  
   - pip:
       - simpletransformers==0.70.0
-      - transformers==4.38.2
+      - transformers==4.37.2
       - numpy
       - scikit-learn
+      - accelerate==0.28.0
+

@@ -5,23 +5,24 @@ author:
       given: Indira
       family: Sen
     affiliations:
-      - name: RWTH Aachen University
+      - name: University of Mannheim
 jupyter: python3
 bibliography: references.bib
 csl: apa.csl
 # image: img/cover.jpg
 # image-alt: Computer screen showing calculator app.
+execute:
+  warning: false
 format:
-  html: default
-  ipynb: default
+  html:
+    embed-resources: true
+  ipynb: default    
+code-annotations: hover
 ---
 
 ## Learning Objectives
 
-By the end of this tutorial, you will be able to fine-tune transformer models like BERT for binary and multiclass document classification. We show two options for using transformer models in Python
-
-- Simple Transformers
-- HuggingFace
+By the end of this tutorial, you will be able to fine-tune transformer models like BERT for binary and multiclass document classification. We show how to use `simpletransformers` for using transformer models in Python. @sec-transformers shows how to use `HuggingFace` to train the same model. @sec-multiclass expands the binary classification to multiclass.
 
 As an example, we will fine-tune a specific transformer model (DistilBERT) for automatic sexism detection. 
 
@@ -69,14 +70,13 @@ We then check if have a GPU available. This is important because some parts of t
 
 ```{python}
 gpu_avail = torch.cuda.is_available()
-gpu_avail
 ```
 
 ## Get the data
 
-We first download the datasets we need for finetuning our models. This is a **supervised** classification task, therefore, we will need labeled data. We download the the 'Call me sexist but' (CMSB) dataset which you can find here: [https://search.gesis.org/research_data/SDN-10.7802-2251](https://search.gesis.org/research_data/SDN-10.7802-2251) This dataset is from our paper on detecting sexism in a theory-driven manner [@samory2021call].
+We first download the datasets we need for finetuning our models. This is a **supervised** classification task, therefore, we will need labeled data. We download the the 'Call me sexist but' (CMSB) dataset which you can find here: <https://search.gesis.org/research_data/SDN-10.7802-2251> This dataset is from our paper on detecting sexism in a theory-driven manner [@samory2021call].
 
-Here, we can download the full data ('sexism\_data.csv') and put it in folder called 'sexism_data' in the same location as our jupyter notebook. Here, we will use just a subset of the data for demonstration.
+Here, we can download the full data ('sexism\_data.csv') and put it in folder called 'sexism_data' in the same location as our jupyter notebook. Here, we will use just a subset of the data ('sexism_sample.csv') for demonstration.
 
 ```{python}
 ## sexism_data = pd.read_csv('sexism_data/sexism_data.csv')
@@ -209,7 +209,7 @@ That's a wrap on fine-tuning your own transformer models for text classification
 - [https://www.aiforhumanists.com/tutorials/](https://www.aiforhumanists.com/tutorials/)
 - [https://huggingface.co/docs/transformers/en/training](https://huggingface.co/docs/transformers/en/training)
 
-### With HuggingFace `transformers`
+### Optional: HuggingFace `transformers` {#sec-transformers}
 
 We now repeat the same process with the HuggingFace [`transformers` Python library](https://huggingface.co/transformers/installation.html). Additionally, we also use the [accelerate library](https://huggingface.co/docs/accelerate/index), which helps make our code more efficient. 
 We will again use DistilBERT.
@@ -222,7 +222,6 @@ from transformers import Trainer, TrainingArguments
 We will set some of the configurations, including whether to use a GPU or not.
 
 ```{python}
-#| eval: false
 model_name = 'distilbert-base-uncased'
 if gpu_avail:
     device_name = 'cuda'
@@ -239,7 +238,6 @@ cached_model_directory_name = 'output_hf'
 We will reuse the train-test splits we created for simpletransformers, but change the data structure slightly.
 
 ```{python}
-#| eval: false
 train_texts = train_df['text'].values
 train_labels = train_df['labels'].values
 
@@ -252,14 +250,12 @@ Compared to simpletransformers, we get a closer look at what happens 'under the 
 The tokens will be separated into "word pieces" using the transformers tokenizers ('DistilBertTokenizerFast' in this case to match the DistiBERT model). And some special tokens will also be added such as **CLS** (start token of every tweet) and **SEP** (separator between each sentence {not tweet}):
 
 ```{python}
-#| eval: false
 tokenizer = DistilBertTokenizerFast.from_pretrained(model_name)
 ```
 
 We now encode our texts using the tokenizer.
 
 ```{python}
-#| eval: false
 from datasets import Dataset
 
 train_df = Dataset.from_pandas(train_df)
@@ -276,19 +272,14 @@ tokenized_test_df = test_df.map(tokenize_function, batched=True)
 We now load the DistilBERT model and specify that it should use the GPU.
 
 ```{python}
-#| eval: false
 model = DistilBertForSequenceClassification.from_pretrained(model_name, num_labels=len(le.classes_)).to()
 ```
 
 As we did with simpletransformers, we now set the training parameters, i.e., the number of epochs.
 
 ```{python}
-#| eval: false
 import accelerate
-```
 
-```{python}
-#| eval: false
 training_args = TrainingArguments(
     num_train_epochs=3,              # total number of training epochs
     output_dir='./results',          # output directory
@@ -301,7 +292,6 @@ training_args = TrainingArguments(
 First, we define a custom evaluation function that returns the accuracy. You could modify this function to return precision, recall, F1, and/or other metrics.
 
 ```{python}
-#| eval: false
 from sklearn.metrics import accuracy_score
 def compute_metrics(pred):
     labels = pred.label_ids
@@ -315,19 +305,21 @@ def compute_metrics(pred):
 Then we create a HuggingFace `Trainer` object using the `TrainingArguments` object that we created above. We also send our `compute_metrics` function to the `Trainer` object, along with our test and train datasets.
 
 ```{python}
-#| eval: false
 trainer = Trainer(
-    model=model,                         # the instantiated 🤗 Transformers model to be trained
-    args=training_args,                  # training arguments, defined above
-    train_dataset=tokenized_train_df,         # training dataset
-    compute_metrics=compute_metrics      # our custom evaluation function
+    model=model,                         #<1>
+    args=training_args,                  #<2>
+    train_dataset=tokenized_train_df,    #<3>
+    compute_metrics=compute_metrics      #<4>
 )
 ```
+1. the instantiated 🤗 Transformers model to be trained
+2. training arguments, defined above
+3. training dataset
+4. our custom evaluation function
 
 Time to finally fine-tune!
 
 ```{python}
-#| eval: false
 trainer.train()
 ```
 
@@ -336,40 +328,35 @@ trainer.train()
 The following cell will save the model and its configuration files to a directory in Colab. To preserve this model for future use, you should download the model to your computer.
 
 ```{python}
-#| eval: false
 trainer.save_model(cached_model_directory_name)
 ```
 
 (Optional) If you've already fine-tuned and saved the model, you can reload it using the following line. You don't have to run fine-tuning every time you want to evaluate.
 
 ```{python}
-#| eval: false
 # trainer = DistilBertForSequenceClassification.from_pretrained(cached_model_directory_name)
 ```
 
 We can now evaluate the model by predicting the labels for the test set.
 
 ```{python}
-#| eval: false
 predicted_results = trainer.predict(tokenized_test_df)
 ```
 
 ```{python}
-#| eval: false
 predicted_labels = predicted_results.predictions.argmax(-1) # Get the highest probability prediction
 predicted_labels = predicted_labels.flatten().tolist()      # Flatten the predictions into a 1D list
 predicted_labels[0:5]
 ```
 
 ```{python}
-#| eval: false
 print(classification_report(tokenized_test_df['labels'],
                             predicted_labels))
 ```
 
 You can now use this classifier on other types of data to label it for potentially sexist content.
 
-## Multi-class classification
+## Optional: Multi-class classification {#sec-multiclass}
 
 In the previous parts, we finetuned a binary classifier for differentiating sexist vs. non-sexist content. However, the CMSB dataset has fine-grained labels for sexism based on **content** and **phrasing**.
 
@@ -378,43 +365,39 @@ So we now use a multi-class classifier using simpletransformers, with a few twea
 But first, we have to aggregate the annotations from all crowdworkers to obtain the content and phrasing labels. For simplicity, we will use the majority label (breaking ties randomly).
 
 ```{python}
-#| eval: false
-sexism_data_annotations = pd.read_csv('sexism_data/all_data_annotations.csv', sep = '\t')
+sexism_data_annotations = pd.read_csv('sexism_data/sexism_annotations.csv', sep = ',')
 sexism_data_annotations.head()
 ```
 
 ```{python}
-#| eval: false
-tweets = sexism_data_annotations['_id'].unique()
+tweets = sexism_data_annotations['id'].unique()
 ```
 
 ```{python}
-#| eval: false
 from collections import Counter
 
 content_labels = []
 phrasing_labels = []
 
 for tweet in tweets:
-    data_subset = sexism_data_annotations[sexism_data_annotations['_id'] == tweet]
-    content_labels.append(Counter(data_subset['content'].values).most_common()[0][0]) # get the majority label for content
-    phrasing_labels.append(Counter(data_subset['phrasing']).most_common()[0][0]) # get the majority label for phrasing
+    data_subset = sexism_data_annotations[sexism_data_annotations['id'] == tweet]
+    content_labels.append(Counter(data_subset['content'].values).most_common()[0][0]) #<1>
+    phrasing_labels.append(Counter(data_subset['phrasing']).most_common()[0][0])      #<2>
 ```
+1. get the majority label for content
+2. get the majority label for phrasing
 
 ```{python}
-#| eval: false
 finegrained_sexism_data = pd.DataFrame([tweets, content_labels, phrasing_labels]).T
-finegrained_sexism_data.columns = ['_id', 'content_label', 'phrasing_label']
+finegrained_sexism_data.columns = ['id', 'content_label', 'phrasing_label']
 finegrained_sexism_data
 ```
 
 ```{python}
-#| eval: false
 finegrained_sexism_data.groupby('content_label').size()
 ```
 
 ```{python}
-#| eval: false
 finegrained_sexism_data.groupby('phrasing_label').size()
 ```
 
@@ -425,20 +408,16 @@ The six content and three phrasing categories are:
 Let's join this data with the tweets data from 'all_data.csv'
 
 ```{python}
-#| eval: false
-
-finegrained_sexism_data = pd.merge(finegrained_sexism_data, sexism_data[['_id', 'text', 'sexist']])
+finegrained_sexism_data = pd.merge(finegrained_sexism_data, sexism_data[['id', 'text', 'sexist']])
 ```
 
 ```{python}
-#| eval: false
 finegrained_sexism_data.groupby(['content_label']).size()
 ```
 
-Since our dataset is somewhat imbalanced with low representation for some categories, we can restrict it to only those classes that have at least 300 instances, i.e., 1, 2, and 6.
+Since our dataset is somewhat imbalanced with low representation for some categories, we can restrict it to only those classes that have at least 30 instances, i.e., 1, 2, and 6.
 
 ```{python}
-#| eval: false
 finegrained_sexism_data = finegrained_sexism_data[finegrained_sexism_data['content_label'].isin([1, 2, 6])]
 
 # we also change the label range for simpletransformers, making them range from 0 to 2.
@@ -452,12 +431,10 @@ finegrained_sexism_data.groupby(['content_label']).size()
 Let's train a classifier for identifying sexist content or phrasing
 
 ```{python}
-#| eval: false
 category = 'content_label'
 ```
 
 ```{python}
-#| eval: false
 multi_train_df, multi_test_df = train_test_split(finegrained_sexism_data,
                                                  stratify=finegrained_sexism_data[category],
                                                  test_size=0.2)
@@ -466,7 +443,6 @@ multi_train_df, multi_test_df = train_test_split(finegrained_sexism_data,
 You have the add the number of labels to the model initialization.
 
 ```{python}
-#| eval: false
 # Optional model configuration
 model_args = ClassificationArgs(num_train_epochs=5,
                                 output_dir='output_st',
@@ -493,30 +469,25 @@ if gpu_avail:
 ```
 
 ```{python}
-#| eval: false
 multi_train_df = multi_train_df[['text', category]]
 multi_test_df = multi_test_df[['text', category]]
 ```
 
 ```{python}
-#| eval: false
 # Train the model.
 model.train_model(multi_train_df)
 ```
 
 ```{python}
-#| eval: false
 predictions, raw_outputs = model.predict([sexist_tweet])
 predictions
 ```
 
 ```{python}
-#| eval: false
 preds, _ = model.predict(list(multi_test_df['text'].values))
 ```
 
 ```{python}
-#| eval: false
 print(classification_report(multi_test_df[category], preds))
 ```
 
