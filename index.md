@@ -76,7 +76,8 @@ manner (Samory et al., 2021).
 
 Here, we can download the full data (‘sexism_data.csv’) and put it in
 folder called ‘sexism_data’. Here, we will use just a subset of the data
-(‘sexism_sample.csv’) for demonstration.
+(‘sexism_sample.csv’) for speeding up the training. For a better
+classifier, please train on the full data.
 
 ``` python
 ## sexism_data = pd.read_csv('sexism_data/sexism_data.csv')
@@ -457,7 +458,7 @@ trainer.train()
 
 <p>
 
-    TrainOutput(global_step=60, training_loss=0.39763174057006834, metrics={'train_runtime': 181.4673, 'train_samples_per_second': 2.645, 'train_steps_per_second': 0.331, 'total_flos': 63584351354880.0, 'train_loss': 0.39763174057006834, 'epoch': 3.0})
+    TrainOutput(global_step=60, training_loss=0.39763174057006834, metrics={'train_runtime': 181.1074, 'train_samples_per_second': 2.65, 'train_steps_per_second': 0.331, 'total_flos': 63584351354880.0, 'train_loss': 0.39763174057006834, 'epoch': 3.0})
 
 #### Save fine-tuned model
 
