@@ -1,0 +1,20 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: >-
+  [Tutorial] Fine-Tuning Transformer Models for Classification of Digital Behavioural Data
+message: >-
+  If you use this tutorial, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Indira
+    family-names: Sen
+    email: indira.sen@uni-mannheim.de
+    affiliation: University of Mannheim
+identifiers:
+  - type: url
+    value: 'https://github.com/gesiscss/methodshub-weat'
+repository-code: 'https://github.com/gesiscss/methodshub-weat'
+license: MIT
