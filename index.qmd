@@ -77,7 +77,7 @@ gpu_avail = torch.cuda.is_available()
 
 We first download the datasets we need for finetuning our models. This is a **supervised** classification task, therefore, we will need labeled data. We download the the 'Call me sexist but' (CMSB) dataset which you can find here: <https://search.gesis.org/research_data/SDN-10.7802-2251> This dataset is from our paper on detecting sexism in a theory-driven manner [@samory2021call].
 
-Here, we can download the full data ('sexism\_data.csv') and put it in folder called 'sexism_data'. Here, we will use just a subset of the data ('sexism_sample.csv') for demonstration.
+Here, we can download the full data ('sexism\_data.csv') and put it in folder called 'sexism_data'. Here, we will use just a subset of the data ('sexism_sample.csv') for speeding up the training. For a better classifier, please train on the full data.
 
 ```{python}
 ## sexism_data = pd.read_csv('sexism_data/sexism_data.csv')
