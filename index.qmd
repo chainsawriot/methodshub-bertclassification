@@ -1,11 +1,11 @@
 ---
-title: Fine-Tuning Transformer Models for Classification of Digital Behavioural Data
-author:
-  - name:
-      given: Indira
-      family: Sen
-    affiliations:
-      - name: University of Mannheim
+# title: Fine-Tuning Transformer Models for Classification of Digital Behavioural Data
+# author:
+#   - name:
+#       given: Indira
+#       family: Sen
+#     affiliations:
+#       - name: University of Mannheim
 jupyter: python3
 bibliography: references.bib
 csl: apa.csl
@@ -14,10 +14,10 @@ csl: apa.csl
 execute:
   warning: false
 format:
-  html:
-    embed-resources: true
-  ipynb: default
-  gfm: default  
+  # html:
+  #   embed-resources: true
+  # ipynb: default
+  commonmark: default  
 code-annotations: hover
 ---
 
