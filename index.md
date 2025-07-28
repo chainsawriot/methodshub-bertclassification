@@ -5,10 +5,8 @@
 By the end of this tutorial, you will be able to fine-tune transformer
 models like BERT for binary and multiclass document classification. We
 show how to use `simpletransformers` for using transformer models in
-Python. <a href="#sec-transformers" class="quarto-xref">Section 9.1</a>
-shows how to use `HuggingFace` to train the same model.
-<a href="#sec-multiclass" class="quarto-xref">Section 10</a> expands the
-binary classification to multiclass.
+Python. We then switch to `HuggingFace` to train the same model.
+Finally, we expand the binary classification to multiclass.
 
 As an example, we will fine-tune a specific transformer model
 (DistilBERT) for automatic sexism detection.
@@ -98,66 +96,13 @@ sexism_data.head()
     }
 </style>
 
-<table class="dataframe" data-quarto-postprocess="true" data-border="1">
-<thead>
-<tr style="text-align: right;">
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th">id</th>
-<th data-quarto-table-cell-role="th">dataset</th>
-<th data-quarto-table-cell-role="th">text</th>
-<th data-quarto-table-cell-role="th">toxicity</th>
-<th data-quarto-table-cell-role="th">sexist</th>
-<th data-quarto-table-cell-role="th">of_id</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td data-quarto-table-cell-role="th">0</td>
-<td>10330</td>
-<td>other</td>
-<td>MENTION3839 MENTION2475 would have to see what...</td>
-<td>0.203880</td>
-<td>False</td>
-<td>-1</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">1</td>
-<td>5703</td>
-<td>callme</td>
-<td>I hate it when women beat up men in movies!</td>
-<td>0.661064</td>
-<td>True</td>
-<td>-1</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">2</td>
-<td>12331</td>
-<td>scales</td>
-<td>Men are better at science and math than women are</td>
-<td>0.531301</td>
-<td>True</td>
-<td>-1</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">3</td>
-<td>12855</td>
-<td>callme</td>
-<td>"MENTION149: MENTION2551 ps I'd never listen t...</td>
-<td>0.278660</td>
-<td>False</td>
-<td>-1</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">4</td>
-<td>2240</td>
-<td>other</td>
-<td>MENTION279 Vivek W is the Carrot Top of academ...</td>
-<td>0.084303</td>
-<td>False</td>
-<td>-1</td>
-</tr>
-</tbody>
-</table>
+|  | id | dataset | text | toxicity | sexist | of_id |
+|----|----|----|----|----|----|----|
+| 0 | 10330 | other | MENTION3839 MENTION2475 would have to see what... | 0.203880 | False | -1 |
+| 1 | 5703 | callme | I hate it when women beat up men in movies! | 0.661064 | True | -1 |
+| 2 | 12331 | scales | Men are better at science and math than women are | 0.531301 | True | -1 |
+| 3 | 12855 | callme | "MENTION149: MENTION2551 ps I'd never listen t... | 0.278660 | False | -1 |
+| 4 | 2240 | other | MENTION279 Vivek W is the Carrot Top of academ... | 0.084303 | False | -1 |
 
 </div>
 
@@ -276,7 +221,7 @@ model.train_model(train_df)
 
     Running Epoch 3 of 3:   0%|          | 0/20 [00:00<?, ?it/s]
 
-    (60, 0.4641039530436198)
+    (60, 0.4610863367716471)
 
 After training our model, we can use it to make predictions for
 unlabeled datapoints to classify whether they are sexist or not.
@@ -312,16 +257,16 @@ result
 
     Running Evaluation:   0%|          | 0/1 [00:00<?, ?it/s]
 
-    {'mcc': np.float64(0.502518907629606),
-     'accuracy': 0.75,
-     'f1_score': 0.7619047619047619,
-     'tp': np.int64(16),
-     'tn': np.int64(14),
-     'fp': np.int64(6),
-     'fn': np.int64(4),
-     'auroc': np.float64(0.8775),
-     'auprc': np.float64(0.875712765541873),
-     'eval_loss': 0.45420533418655396}
+    {'mcc': np.float64(0.6508140266182866),
+     'accuracy': 0.825,
+     'f1_score': 0.8292682926829268,
+     'tp': np.int64(17),
+     'tn': np.int64(16),
+     'fp': np.int64(4),
+     'fn': np.int64(3),
+     'auroc': np.float64(0.925),
+     'auprc': np.float64(0.912827442539214),
+     'eval_loss': 0.377737432718277}
 
 ``` python
 # you can also use sklearn's neat classification report to get more metrics
@@ -337,12 +282,12 @@ print(classification_report(test_df['labels'], preds))
 
                   precision    recall  f1-score   support
 
-               0       0.78      0.70      0.74        20
-               1       0.73      0.80      0.76        20
+               0       0.84      0.80      0.82        20
+               1       0.81      0.85      0.83        20
 
-        accuracy                           0.75        40
-       macro avg       0.75      0.75      0.75        40
-    weighted avg       0.75      0.75      0.75        40
+        accuracy                           0.82        40
+       macro avg       0.83      0.82      0.82        40
+    weighted avg       0.83      0.82      0.82        40
 
 ## Conclusion
 
@@ -504,20 +449,12 @@ trainer.train()
     </div>
     &#10;
 
-<table class="dataframe" data-quarto-postprocess="true" data-border="1">
-<thead>
-<tr style="text-align: left;">
-<th data-quarto-table-cell-role="th">Step</th>
-<th data-quarto-table-cell-role="th">Training Loss</th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
+| Step | Training Loss |
+|------|---------------|
 
 <p>
 
-    TrainOutput(global_step=60, training_loss=0.3950662612915039, metrics={'train_runtime': 181.172, 'train_samples_per_second': 2.649, 'train_steps_per_second': 0.331, 'total_flos': 63584351354880.0, 'train_loss': 0.3950662612915039, 'epoch': 3.0})
+    TrainOutput(global_step=60, training_loss=0.34791110356648763, metrics={'train_runtime': 181.6203, 'train_samples_per_second': 2.643, 'train_steps_per_second': 0.33, 'total_flos': 63584351354880.0, 'train_loss': 0.34791110356648763, 'epoch': 3.0})
 
 #### Save fine-tuned model
 
@@ -549,7 +486,7 @@ predicted_labels = predicted_labels.flatten().tolist()      # Flatten the predic
 predicted_labels[0:5]
 ```
 
-    [1, 1, 1, 1, 0]
+    [0, 1, 0, 1, 0]
 
 ``` python
 print(classification_report(tokenized_test_df['labels'],
@@ -558,8 +495,8 @@ print(classification_report(tokenized_test_df['labels'],
 
                   precision    recall  f1-score   support
 
-               0       0.85      0.85      0.85        20
-               1       0.85      0.85      0.85        20
+               0       0.89      0.80      0.84        20
+               1       0.82      0.90      0.86        20
 
         accuracy                           0.85        40
        macro avg       0.85      0.85      0.85        40
@@ -600,54 +537,13 @@ sexism_data_annotations.head()
     }
 </style>
 
-<table class="dataframe" data-quarto-postprocess="true" data-border="1">
-<thead>
-<tr style="text-align: right;">
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th">phrasing</th>
-<th data-quarto-table-cell-role="th">content</th>
-<th data-quarto-table-cell-role="th">worker</th>
-<th data-quarto-table-cell-role="th">id</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td data-quarto-table-cell-role="th">0</td>
-<td>3</td>
-<td>2</td>
-<td>0</td>
-<td>1815</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">1</td>
-<td>3</td>
-<td>6</td>
-<td>1</td>
-<td>1815</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">2</td>
-<td>3</td>
-<td>6</td>
-<td>2</td>
-<td>1815</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">3</td>
-<td>3</td>
-<td>6</td>
-<td>3</td>
-<td>1815</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">4</td>
-<td>3</td>
-<td>6</td>
-<td>4</td>
-<td>1815</td>
-</tr>
-</tbody>
-</table>
+|     | phrasing | content | worker | id   |
+|-----|----------|---------|--------|------|
+| 0   | 3        | 2       | 0      | 1815 |
+| 1   | 3        | 6       | 1      | 1815 |
+| 2   | 3        | 6       | 2      | 1815 |
+| 3   | 3        | 6       | 3      | 1815 |
+| 4   | 3        | 6       | 4      | 1815 |
 
 </div>
 
@@ -692,84 +588,19 @@ finegrained_sexism_data
     }
 </style>
 
-<table class="dataframe" data-quarto-postprocess="true" data-border="1">
-<thead>
-<tr style="text-align: right;">
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th">id</th>
-<th data-quarto-table-cell-role="th">content_label</th>
-<th data-quarto-table-cell-role="th">phrasing_label</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td data-quarto-table-cell-role="th">0</td>
-<td>1815</td>
-<td>6</td>
-<td>3</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">1</td>
-<td>8199</td>
-<td>2</td>
-<td>3</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">2</td>
-<td>11847</td>
-<td>6</td>
-<td>3</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">3</td>
-<td>9218</td>
-<td>6</td>
-<td>3</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">4</td>
-<td>13298</td>
-<td>6</td>
-<td>3</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">...</td>
-<td>...</td>
-<td>...</td>
-<td>...</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">5645</td>
-<td>2383</td>
-<td>6</td>
-<td>2</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">5646</td>
-<td>5627</td>
-<td>6</td>
-<td>3</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">5647</td>
-<td>11041</td>
-<td>6</td>
-<td>3</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">5648</td>
-<td>3535</td>
-<td>6</td>
-<td>3</td>
-</tr>
-<tr>
-<td data-quarto-table-cell-role="th">5649</td>
-<td>9901</td>
-<td>6</td>
-<td>3</td>
-</tr>
-</tbody>
-</table>
+|      | id    | content_label | phrasing_label |
+|------|-------|---------------|----------------|
+| 0    | 1815  | 6             | 3              |
+| 1    | 8199  | 2             | 3              |
+| 2    | 11847 | 6             | 3              |
+| 3    | 9218  | 6             | 3              |
+| 4    | 13298 | 6             | 3              |
+| ...  | ...   | ...           | ...            |
+| 5645 | 2383  | 6             | 2              |
+| 5646 | 5627  | 6             | 3              |
+| 5647 | 11041 | 6             | 3              |
+| 5648 | 3535  | 6             | 3              |
+| 5649 | 9901  | 6             | 3              |
 
 <p>5650 rows × 3 columns</p>
 </div>
@@ -936,6 +767,8 @@ print(classification_report(multi_test_df[category], preds))
 We can see that the model performs worse than binary sexism
 classification, but still better than a random chance model which would
 have add an accuracy of 0.3 as we have three classes.
+
+## References
 
 <div id="refs" class="references csl-bib-body hanging-indent"
 entry-spacing="0" line-spacing="2">
