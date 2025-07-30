@@ -1,11 +1,11 @@
 ---
-title: Fine-Tuning Transformer Models for Classification of Digital Behavioural Data
-author:
-  - name:
-      given: Indira
-      family: Sen
-    affiliations:
-      - name: University of Mannheim
+# title: Fine-Tuning Transformer Models for Classification of Digital Behavioural Data
+# author:
+#   - name:
+#       given: Indira
+#       family: Sen
+#     affiliations:
+#       - name: University of Mannheim
 jupyter: python3
 bibliography: references.bib
 csl: apa.csl
@@ -14,16 +14,16 @@ csl: apa.csl
 execute:
   warning: false
 format:
-  html:
-    embed-resources: true
-  ipynb: default
-  gfm: default  
+  # html:
+  #   embed-resources: true
+  # ipynb: default
+  gfm: default
 code-annotations: hover
 ---
 
 ## Learning Objectives
 
-By the end of this tutorial, you will be able to fine-tune transformer models like BERT for binary and multiclass document classification. We show how to use `simpletransformers` for using transformer models in Python. @sec-transformers shows how to use `HuggingFace` to train the same model. @sec-multiclass expands the binary classification to multiclass.
+By the end of this tutorial, you will be able to fine-tune transformer models like BERT for binary and multiclass document classification. We show how to use `simpletransformers` for using transformer models in Python. We then switch to `HuggingFace` to train the same model. Finally, we expand the binary classification to multiclass.
 
 As an example, we will fine-tune a specific transformer model (DistilBERT) for automatic sexism detection. 
 
@@ -493,3 +493,5 @@ print(classification_report(multi_test_df[category], preds))
 ```
 
 We can see that the model performs worse than binary sexism classification, but still better than a random chance model which would have add an accuracy of 0.3 as we have three classes.
+
+## References
