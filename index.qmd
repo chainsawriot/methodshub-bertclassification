@@ -49,7 +49,7 @@ This package is optional
 
 ## Duration
 
-It depends on the hardware. This notebook can be used with or without GPU compute, but it's much faster if you do have a GPU.
+The entire tutorial takes around 30 minutes to read through. The running time depends on the hardware. This notebook can be used with or without GPU compute. On a laptop with a Nvidia T500 GPU (4G) and a proper CUDA setup, the running time is around 7 minutes. Without GPU, it would take many hours.
 
 ## Social Science Usecase(s)
 

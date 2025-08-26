@@ -34,8 +34,11 @@ This package is optional
 
 ## Duration
 
-It depends on the hardware. This notebook can be used with or without
-GPU compute, but it’s much faster if you do have a GPU.
+The entire tutorial takes around 30 minutes to read through. The running
+time depends on the hardware. This notebook can be used with or without
+GPU compute. On a laptop with a Nvidia T500 GPU (4G) and a proper CUDA
+setup, the running time is around 7 minutes. Without GPU, it would take
+many hours.
 
 ## Social Science Usecase(s)
 
@@ -221,7 +224,7 @@ model.train_model(train_df)
 
     Running Epoch 3 of 3:   0%|          | 0/20 [00:00<?, ?it/s]
 
-    (60, 0.4610863367716471)
+    (60, 0.5564038594563802)
 
 After training our model, we can use it to make predictions for
 unlabeled datapoints to classify whether they are sexist or not.
@@ -257,16 +260,16 @@ result
 
     Running Evaluation:   0%|          | 0/1 [00:00<?, ?it/s]
 
-    {'mcc': np.float64(0.6508140266182866),
+    {'mcc': np.float64(0.6713171133426189),
      'accuracy': 0.825,
-     'f1_score': 0.8292682926829268,
-     'tp': np.int64(17),
-     'tn': np.int64(16),
-     'fp': np.int64(4),
-     'fn': np.int64(3),
-     'auroc': np.float64(0.925),
-     'auprc': np.float64(0.912827442539214),
-     'eval_loss': 0.377737432718277}
+     'f1_score': 0.8444444444444444,
+     'tp': np.int64(19),
+     'tn': np.int64(14),
+     'fp': np.int64(6),
+     'fn': np.int64(1),
+     'auroc': np.float64(0.9299999999999999),
+     'auprc': np.float64(0.9545054047259929),
+     'eval_loss': 0.4366455078125}
 
 ``` python
 # you can also use sklearn's neat classification report to get more metrics
@@ -282,12 +285,12 @@ print(classification_report(test_df['labels'], preds))
 
                   precision    recall  f1-score   support
 
-               0       0.84      0.80      0.82        20
-               1       0.81      0.85      0.83        20
+               0       0.93      0.70      0.80        20
+               1       0.76      0.95      0.84        20
 
         accuracy                           0.82        40
-       macro avg       0.83      0.82      0.82        40
-    weighted avg       0.83      0.82      0.82        40
+       macro avg       0.85      0.82      0.82        40
+    weighted avg       0.85      0.82      0.82        40
 
 ## Conclusion
 
@@ -454,7 +457,7 @@ trainer.train()
 
 <p>
 
-    TrainOutput(global_step=60, training_loss=0.34791110356648763, metrics={'train_runtime': 181.6203, 'train_samples_per_second': 2.643, 'train_steps_per_second': 0.33, 'total_flos': 63584351354880.0, 'train_loss': 0.34791110356648763, 'epoch': 3.0})
+    TrainOutput(global_step=60, training_loss=0.39763174057006834, metrics={'train_runtime': 181.7385, 'train_samples_per_second': 2.641, 'train_steps_per_second': 0.33, 'total_flos': 63584351354880.0, 'train_loss': 0.39763174057006834, 'epoch': 3.0})
 
 #### Save fine-tuned model
 
@@ -486,7 +489,7 @@ predicted_labels = predicted_labels.flatten().tolist()      # Flatten the predic
 predicted_labels[0:5]
 ```
 
-    [0, 1, 0, 1, 0]
+    [1, 1, 1, 1, 1]
 
 ``` python
 print(classification_report(tokenized_test_df['labels'],
@@ -495,12 +498,12 @@ print(classification_report(tokenized_test_df['labels'],
 
                   precision    recall  f1-score   support
 
-               0       0.89      0.80      0.84        20
-               1       0.82      0.90      0.86        20
+               0       0.94      0.75      0.83        20
+               1       0.79      0.95      0.86        20
 
         accuracy                           0.85        40
-       macro avg       0.85      0.85      0.85        40
-    weighted avg       0.85      0.85      0.85        40
+       macro avg       0.86      0.85      0.85        40
+    weighted avg       0.86      0.85      0.85        40
 
 You can now use this classifier on other types of data to label it for
 potentially sexist content.
